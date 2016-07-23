@@ -13,7 +13,10 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-NT_URL = "http://127.0.0.1:8080/exist/rest/db/nz/nz.xml"
+API_HOST = "http://alexkorotkov.ru:8080"
+
+NT_URL = API_HOST + "/exist/rest/db/nz/nz.xml"
+BOOKS_URL = API_HOST + "/exist/rest/db/nz/books.xq"
 
 PATTERN_SINGLE = "<Книга>. <Глава>:<Стих>"
 PATTERN_RANGE = "<Книга>. <Глава>:<Стих>-<Стих>"
@@ -45,6 +48,7 @@ def build_selector(query):
     result = re.search(INDEX, query)
     if result:
         resultdict = result.groupdict()
+        resultdict["book"] = resultdict["book"].lower()
         return """//book[short-title="{book}"]/chapter[{chapter}]/verse[position()={verse_from}{to_part}]""".format(
             to_part=" to {}".format(resultdict['verse_to']) if resultdict['verse_to'] is not None else "",
             **resultdict)
@@ -78,6 +82,13 @@ def inlinequery(bot, update):
         bot.answerInlineQuery(update.inline_query.id, results=results)
 
 
+def books(bot, update):
+    res = etree.parse(BOOKS_URL)
+    message = "*НОВЫЙ ЗАВЕТ*\n\n"
+    message += "\n".join(map(lambda book: "{}. - {}".format(book.get("abbr").title(), book.get("title")), res.xpath("/books/book")))
+    bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
+
+
 def show(bot, update):
     query = update.message.text
     myselector = build_selector(query)
@@ -105,8 +116,9 @@ def main(token):
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
+    dp.add_handler(CommandHandler("books", books))
 
-    #dp.add_handler(MessageHandler([Filters.text], show))
+    dp.add_handler(MessageHandler([Filters.text], show))
     dp.add_handler(InlineQueryHandler(inlinequery))
 
     # log all errors
