@@ -98,7 +98,7 @@ def books(bot, update):
 
 def stats(bot, update, args):
     if args:
-        res = etree.parse(STATS_URL + "?book=" + args[1].strip().lower())
+        res = etree.parse(STATS_URL + "?book=" + args[0].strip().lower())
         message = "*СТАТИСТИКА*\n\n"
         message += "\n".join(
             map(
