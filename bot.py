@@ -16,6 +16,7 @@ API_HOST = "http://alexkorotkov.ru:8080"
 
 NT_URL = API_HOST + "/exist/rest/db/nz/nz.xml"
 BOOKS_URL = API_HOST + "/exist/rest/db/nz/books.xq"
+STATS_URL = API_HOST + "/exist/rest/db/nz/stats.xq"
 
 PATTERN_SINGLE = "<Книга>. <Глава>:<Стих>"
 PATTERN_RANGE = "<Книга>. <Глава>:<Стих>-<Стих>"
@@ -31,6 +32,7 @@ HELP = """
 
 Команды:
 /books - список доступных книг
+/stats - статистика по количеству стихов в главах в книгах
 """.format(PATTERN_SINGLE, PATTERN_RANGE)
 
 def start(bot, update):
@@ -94,6 +96,19 @@ def books(bot, update):
     bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
 
 
+def stats(bot, update):
+    res = etree.parse(STATS_URL)
+    message = "*СТАТИСТИКА*\n\n"
+    message += "\n".join(
+        map(
+            lambda chapter: "{}. {} стихов {}".format(
+                chapter.get("book").title(),
+                chapter.get("number"),
+                chapter.get("verses")
+            ), res.xpath("/chapters/chapter")))
+    bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
+
+
 def show(bot, update):
     query = update.message.text.lower()
     if re.match(INDEX, query):
@@ -118,6 +133,7 @@ def main(token):
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("books", books))
+    dp.add_handler(CommandHandler("stats", stats))
 
     dp.add_handler(MessageHandler([Filters.text], show))
     dp.add_handler(InlineQueryHandler(inlinequery))
