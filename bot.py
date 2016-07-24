@@ -98,12 +98,14 @@ def books(bot, update):
 
 def stats(bot, update, args):
     if args:
-        res = etree.parse(STATS_URL + "?book=" + args[0].strip().lower())
+        index = args[0].strip().lower()
+        url = STATS_URL + "?book=" + args[0].strip().lower()
+        res = etree.parse(url)
         message = "*СТАТИСТИКА*\n\n"
         message += "\n".join(
             map(
                 lambda chapter: "{}. {} стихов {}".format(
-                    chapter.get("book").title(),
+                    index.title(),
                     chapter.get("number"),
                     chapter.get("verses")
                 ), res.xpath("/chapters/chapter")))
