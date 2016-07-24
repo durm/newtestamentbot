@@ -99,7 +99,7 @@ def show(bot, update):
     if re.match(INDEX, query):
         message = get_message(query)
         if message:
-            bot.sendMessage(update.message.chat_id, text=message)
+            bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
         else:
             bot.sendMessage(update.message.chat_id, text="По вашему запросу ничего не найдено.")
     else:
