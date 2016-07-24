@@ -96,18 +96,24 @@ def books(bot, update):
     bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
 
 
-def stats(bot, update):
-    res = etree.parse(STATS_URL)
-    message = "*СТАТИСТИКА*\n\n"
-    message += "\n".join(
-        map(
-            lambda chapter: "{}. {} стихов {}".format(
-                chapter.get("book").title(),
-                chapter.get("number"),
-                chapter.get("verses")
-            ), res.xpath("/chapters/chapter")))
-    bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
-
+def stats(bot, update, args):
+    if args:
+        res = etree.parse(STATS_URL + "?book=" + args[0].strip())
+        message = "*СТАТИСТИКА*\n\n"
+        message += "\n".join(
+            map(
+                lambda chapter: "{}. {} стихов {}".format(
+                    chapter.get("book").title(),
+                    chapter.get("number"),
+                    chapter.get("verses")
+                ), res.xpath("/chapters/chapter")))
+        bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
+    else:
+        message = """
+Через пробел определите идентификатор книги, чтобы получить статистику.\n
+Например, _/stats Мф_
+        """
+        bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
 
 def show(bot, update):
     query = update.message.text.lower()
