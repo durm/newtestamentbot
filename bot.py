@@ -10,7 +10,6 @@ import uuid
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
-
 logger = logging.getLogger(__name__)
 
 API_HOST = "http://alexkorotkov.ru:8080"
@@ -29,6 +28,9 @@ HELP = """
 *{}* для диапазона стихов
 (максимальное количество стихов в диапазоне равно 10)
 Например: _Мф. 5:3-12_
+
+Команды:
+/books - список доступных книг
 """.format(PATTERN_SINGLE, PATTERN_RANGE)
 
 def start(bot, update):
@@ -58,42 +60,44 @@ def get_url(myselector):
     return NT_URL + '?_query=' + myselector
 
 
-def get_text_by_selector(myselector):
+def get_message(query):
+    myselector = build_selector(query)
     url = NT_URL + '?_query=' + myselector
     result = etree.parse(url)
     message = "\n".join(result.xpath("//verse/text()"))
-    return message[0:4000] + "..." if len(message) > 4000 else message
+    message += "\n_" + " ".join(query.split()).title() + "_"
+    return message
 
 
 def inlinequery(bot, update):
-    query = update.inline_query.query
+    query = update.inline_query.query.lower()
     if re.match(INDEX, query):
-        myselector = build_selector(query)
-        message = get_text_by_selector(myselector)
-        message += "\n_" + " ".join(query.split()) + "_"
-        results = list()
-        results.append(
-            InlineQueryResultArticle(id=uuid.uuid4(),
-                                     title=query,
-                                     input_message_content=InputTextMessageContent(
-                                         message, parse_mode=ParseMode.MARKDOWN),
-                                     parse_mode=ParseMode.MARKDOWN)
-        )
-        bot.answerInlineQuery(update.inline_query.id, results=results)
+        message = get_message(query)
+        if message:
+            results = list()
+            results.append(
+                InlineQueryResultArticle(
+                    id=uuid.uuid4(),
+                    title=query,
+                    input_message_content=InputTextMessageContent(
+                    message, parse_mode=ParseMode.MARKDOWN),
+                    parse_mode=ParseMode.MARKDOWN)
+            )
+            bot.answerInlineQuery(update.inline_query.id, results=results)
 
 
 def books(bot, update):
     res = etree.parse(BOOKS_URL)
     message = "*НОВЫЙ ЗАВЕТ*\n\n"
-    message += "\n".join(map(lambda book: "{}. - {}".format(book.get("abbr").title(), book.get("title")), res.xpath("/books/book")))
+    message += "\n".join(
+        map(lambda book: "{}. - {}".format(book.get("abbr").title(), book.get("title")), res.xpath("/books/book")))
     bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
 
 
 def show(bot, update):
-    query = update.message.text
-    myselector = build_selector(query)
-    if myselector:
-        message = get_text_by_selector(myselector)
+    query = update.message.text.lower()
+    if re.match(INDEX, query):
+        message = get_message(query)
         if message:
             bot.sendMessage(update.message.chat_id, text=message)
         else:
@@ -107,13 +111,10 @@ def error(bot, update, error):
 
 
 def main(token):
-    # Create the EventHandler and pass it your bot's token.
     updater = Updater(token)
 
-    # Get the dispatcher to register handlers
     dp = updater.dispatcher
 
-    # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("books", books))
@@ -121,15 +122,8 @@ def main(token):
     dp.add_handler(MessageHandler([Filters.text], show))
     dp.add_handler(InlineQueryHandler(inlinequery))
 
-    # log all errors
     dp.add_error_handler(error)
-
-    # Start the Bot
     updater.start_polling()
-
-    # Run the bot until the you presses Ctrl-C or the process receives SIGINT,
-    # SIGTERM or SIGABRT. This should be used most of the time, since
-    # start_polling() is non-blocking and will stop the bot gracefully.
     updater.idle()
 
 
