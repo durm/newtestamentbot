@@ -139,7 +139,7 @@ def main(token):
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("books", books))
-    dp.add_handler(CommandHandler("stats", stats))
+    dp.add_handler(CommandHandler("stats", stats, pass_args=True))
 
     dp.add_handler(MessageHandler([Filters.text], show))
     dp.add_handler(InlineQueryHandler(inlinequery))
