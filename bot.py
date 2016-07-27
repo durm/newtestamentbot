@@ -66,9 +66,11 @@ def get_message(query):
     myselector = build_selector(query)
     url = NT_URL + '?_query=' + myselector
     result = etree.parse(url)
-    message = "\n".join(result.xpath("//verse/text()"))
-    message += "\n_" + " ".join(query.split()).title() + "_"
-    return message
+    verses = result.xpath("//verse/text()")
+    if verses:
+        message = "\n".join(verses)
+        message += "\n_" + " ".join(query.split()).title() + "_"
+        return message
 
 
 def inlinequery(bot, update):
