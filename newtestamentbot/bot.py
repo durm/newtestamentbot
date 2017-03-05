@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+    #!/usr/bin/env python
 import sys
 from telegram.ext import Updater, CommandHandler, MessageHandler, InlineQueryHandler, Filters
 from telegram import InlineQueryResultArticle, InputTextMessageContent, ParseMode
@@ -12,11 +12,8 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-API_HOST = "http://alexkorotkov.ru:8080"
-
+API_HOST = "http://existdb:8080"
 NT_URL = API_HOST + "/exist/rest/db/nz/nz.xml"
-BOOKS_URL = API_HOST + "/exist/rest/db/nz/books.xq"
-STATS_URL = API_HOST + "/exist/rest/db/nz/stats.xq"
 
 PATTERN_SINGLE = "<Книга>. <Глава>:<Стих>"
 PATTERN_RANGE = "<Книга>. <Глава>:<Стих>-<Стих>"
@@ -29,10 +26,6 @@ HELP = """
 *{}* для диапазона стихов
 (максимальное количество стихов в диапазоне равно 10)
 Например: _Мф. 5:3-12_
-
-Команды:
-/books - список доступных книг
-/stats - статистика по количеству стихов в главах в книгах
 """.format(PATTERN_SINGLE, PATTERN_RANGE)
 
 def start(bot, update):
@@ -90,35 +83,6 @@ def inlinequery(bot, update):
             bot.answerInlineQuery(update.inline_query.id, results=results)
 
 
-def books(bot, update):
-    res = etree.parse(BOOKS_URL)
-    message = "*НОВЫЙ ЗАВЕТ*\n\n"
-    message += "\n".join(
-        map(lambda book: "{}. - {}".format(book.get("abbr").title(), book.get("title")), res.xpath("/books/book")))
-    bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
-
-
-def stats(bot, update, args):
-    if args:
-        index = args[0].strip().lower()
-        url = STATS_URL + "?book=" + args[0].strip().lower()
-        res = etree.parse(url)
-        message = "*СТАТИСТИКА*\n\n"
-        message += "\n".join(
-            map(
-                lambda chapter: "{}. {} стихов {}".format(
-                    index.title(),
-                    chapter.get("number"),
-                    chapter.get("verses")
-                ), res.xpath("/chapters/chapter")))
-        bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
-    else:
-        message = """
-Через пробел определите идентификатор книги, чтобы получить статистику.\n
-Например, _/stats Мф_
-        """
-        bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
-
 def show(bot, update):
     query = update.message.text.lower()
     if re.match(INDEX, query):
@@ -142,8 +106,6 @@ def main(token):
 
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
-    dp.add_handler(CommandHandler("books", books))
-    dp.add_handler(CommandHandler("stats", stats, pass_args=True))
 
     dp.add_handler(MessageHandler([Filters.text], show))
     dp.add_handler(InlineQueryHandler(inlinequery))

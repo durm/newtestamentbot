@@ -1,0 +1,17 @@
+newtestamentbot:
+  build: .
+  volumes:
+    - ./newtestamentbot:/newtestamentbot
+  links:
+    - existdb
+existdb:
+  image: davidgaya/existdb:latest
+  ports:
+    - "8080:8080"
+  expose:
+    - 8080
+  environment:
+    EXIST_ADMIN_PASSWORD: 21212112
+    JAVA_OPTIONS: "-Dorg.eclipse.jetty.server.Request.maxFormContentSize=5000000"
+  volumes:
+    - ./data:/data
